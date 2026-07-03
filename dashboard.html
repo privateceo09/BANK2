@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef2f5;
+      color: #102a43;
+      padding: 24px;
+    }
+
+    .dashboard {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      gap: 22px;
+    }
+
+    .top-card,
+    .action-card,
+    .summary-card,
+    .transaction-card,
+    .action-result {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(16, 42, 67, 0.08);
+      border: 1px solid rgba(16, 42, 67, 0.08);
+    }
+
+    .top-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .top-card h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .top-card-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      color: #334e68;
+    }
+
+    .top-card-meta span {
+      background: #f0f9ff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      color: #0f5666;
+      font-weight: 700;
+    }
+
+    .top-card-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .top-card-right button {
+      min-width: 140px;
+    }
+
+    .top-card p {
+      margin: 10px 0 0;
+      color: #486581;
+      line-height: 1.6;
+      max-width: 680px;
+    }
+
+    .account-balance {
+      font-size: 3.6rem;
+      margin: 12px 0 0;
+      color: #064e52;
+      font-weight: 800;
+      background: #e6fffb;
+      padding: 6px 12px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(16,42,67,0.06);
+      display: inline-block;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .summary-card h2,
+    .action-card h2,
+    .action-result h2,
+    .transaction-card h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: #334e68;
+      line-height: 1.65;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .button-row button,
+    .action-group button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .button-row button.primary,
+    .action-group button.primary {
+      background: #0f766e;
+      color: white;
+    }
+
+    .button-row button.secondary,
+    .action-group button.secondary {
+      background: #ffffff;
+      color: #102a43;
+      border: 1px solid rgba(16, 42, 67, 0.12);
+    }
+
+    .button-row button:hover,
+    .action-group button:hover {
+      transform: translateY(-1px);
+    }
+
+    .accounts-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .account-pill {
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: #f0f4f8;
+      color: #102a43;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .account-pill.active {
+      background: #0f766e;
+      color: white;
+      border-color: #0f766e;
+    }
+
+    .transaction-card table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .transaction-card th,
+    .transaction-card td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #e1e8f0;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .transaction-card th {
+      color: #334e68;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .amount-positive {
+      color: #16a34a;
+      font-weight: 700;
+    }
+
+    .amount-negative {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .action-card {
+      display: grid;
+      gap: 16px;
+    }
+
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .action-result {
+      display: none;
+      gap: 16px;
+    }
+
+    .action-result.active {
+      display: grid;
+    }
+
+    .action-message,
+    .action-form-container {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 18px;
+      color: #102a43;
+      line-height: 1.6;
+      min-height: 140px;
+      white-space: pre-wrap;
+    }
+
+    .action-form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .action-form label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #102a43;
+    }
+
+    .action-form input,
+    .action-form select,
+    .action-form textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      color: #102a43;
+      background: white;
+    }
+
+    .action-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .action-form .submit-button {
+      width: fit-content;
+      align-self: start;
+      border: none;
+      border-radius: 999px;
+      background: #0f766e;
+      color: white;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .action-form .submit-button:hover {
+      transform: translateY(-1px);
+      background: #0d6b64;
+    }
+
+    .action-confirmation {
+      background: #ecfdf5;
+      border: 1px solid #10b981;
+      border-radius: 14px;
+      padding: 16px 18px;
+      color: #065f46;
+      font-weight: 700;
+      display: none;
+    }
+
+    .action-confirmation.active {
+      display: block;
+    }
+
+    .highlight-row {
+      animation: fadeHighlight 1.8s ease;
+      background: #f0f9ff;
+    }
+
+    @keyframes fadeHighlight {
+      from {
+        background: #fdffec;
+      }
+      to {
+        background: transparent;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .top-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .button-row,
+      .action-group {
+        justify-content: stretch;
+      }
+
+      .button-row button,
+      .action-group button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+    <section class="top-card">
+      <div>
+        <h1>Welcome back, David Mertens</h1>
+        <div class="top-card-meta">
+          <span>Acct: ****9819</span>
+          <span>Routing: 062206826</span>
+        </div>
+      </div>
+      <div class="top-card-right">
+        <div>
+          <div>Total balance</div>
+          <div class="account-balance">$750,000</div>
+        </div>
+        <button class="secondary" id="signOutButton">Sign out</button>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <h2>Account overview</h2>
+      <div class="accounts-list">
+        <div class="account-pill active">Checking • $335,500</div>
+        <div class="account-pill">Savings • $302,700</div>
+        <div class="account-pill">Business • $111,800</div>
+      </div>
+      <div class="button-row">
+        <button class="primary" data-action="transfer-funds">Transfer funds</button>
+        <button class="secondary" data-action="pay-bill">Pay bill</button>
+        <button class="secondary" data-action="download-statement">Download statement</button>
+        <button class="secondary" data-action="view-alerts">View alerts</button>
+      </div>
+    </section>
+
+    <section class="action-card">
+      <h2>Quick actions</h2>
+      <div class="action-group">
+        <button class="primary" data-action="send-money">Send money</button>
+        <button class="secondary" data-action="add-beneficiary">Add beneficiary</button>
+        <button class="secondary" data-action="schedule-payment">Schedule payment</button>
+        <button class="secondary" data-action="view-transactions">View transactions</button>
+      </div>
+    </section>
+
+    <section class="action-result" id="actionResult">
+      <h2>Action status</h2>
+      <div class="action-message" id="actionMessage">Select a dashboard button to begin.</div>
+      <div class="action-confirmation" id="actionConfirmation"></div>
+      <div class="action-form-container" id="actionFormContainer"></div>
+    </section>
+
+    <section class="transaction-card" id="transactionsSection">
+      <h2>Recent transactions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Location</th>
+            <th>Debit (USD)</th>
+            <th>Credit (USD)</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Jun 01</td>
+            <td>Opening Balance</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>—</td>
+            <td>750,000.00</td>
+          </tr>
+          <tr>
+            <td>Jun 02</td>
+            <td>Executive Payroll Deposit</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>68,500.00</td>
+            <td>818,500.00</td>
+          </tr>
+          <tr>
+            <td>Jun 03</td>
+            <td>Corporate Office Lunch</td>
+            <td>Las Vegas, NV</td>
+            <td>184.63</td>
+            <td>—</td>
+            <td>818,315.37</td>
+          </tr>
+          <tr>
+            <td>Jun 04</td>
+            <td>Wynn Business Meeting</td>
+            <td>Las Vegas, NV</td>
+            <td>562.40</td>
+            <td>—</td>
+            <td>817,752.97</td>
+          </tr>
+          <tr>
+            <td>Jun 05</td>
+            <td>Executive Auto Lease</td>
+            <td>Las Vegas, NV</td>
+            <td>1,425.00</td>
+            <td>—</td>
+            <td>816,327.97</td>
+          </tr>
+          <tr>
+            <td>Jun 06</td>
+            <td>Corporate Expense Reimbursement</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>16,800.00</td>
+            <td>833,127.97</td>
+          </tr>
+          <tr>
+            <td>Jun 08</td>
+            <td>Office Supplies & Printing</td>
+            <td>Las Vegas, NV</td>
+            <td>287.41</td>
+            <td>—</td>
+            <td>832,840.56</td>
+          </tr>
+          <tr>
+            <td>Jun 10</td>
+            <td>Investment Dividend</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>5,840.00</td>
+            <td>838,680.56</td>
+          </tr>
+          <tr>
+            <td>Jun 12</td>
+            <td>Project Contractor Payment</td>
+            <td>Turkey (Wire Transfer)</td>
+            <td>22,500.00</td>
+            <td>—</td>
+            <td>816,180.56</td>
+          </tr>
+          <tr>
+            <td>Jun 14</td>
+            <td>Offshore Equipment Supplier</td>
+            <td>Turkey (Wire Transfer)</td>
+            <td>31,800.00</td>
+            <td>—</td>
+            <td>784,380.56</td>
+          </tr>
+          <tr>
+            <td>Jun 16</td>
+            <td>Monthly Project Bonus</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>35,000.00</td>
+            <td>819,380.56</td>
+          </tr>
+          <tr>
+            <td>Jun 18</td>
+            <td>Hotel & Client Dinner (Pre-Departure)</td>
+            <td>Las Vegas, NV</td>
+            <td>1,240.85</td>
+            <td>—</td>
+            <td>818,139.71</td>
+          </tr>
+          <tr>
+            <td>Jun 19</td>
+            <td>Executive Housing Deposit</td>
+            <td>Istanbul, Turkey</td>
+            <td>12,500.00</td>
+            <td>—</td>
+            <td>805,639.71</td>
+          </tr>
+          <tr>
+            <td>Jun 20</td>
+            <td>Luxury Apartment Lease</td>
+            <td>Istanbul, Turkey</td>
+            <td>28,750.00</td>
+            <td>—</td>
+            <td>776,889.71</td>
+          </tr>
+          <tr>
+            <td>Jun 21</td>
+            <td>Vodafone Türkiye Business Plan</td>
+            <td>Istanbul, Turkey</td>
+            <td>129.81</td>
+            <td>—</td>
+            <td>776,759.90</td>
+          </tr>
+          <tr>
+            <td>Jun 21</td>
+            <td>Chauffeur Services</td>
+            <td>Istanbul, Turkey</td>
+            <td>436.00</td>
+            <td>—</td>
+            <td>776,323.90</td>
+          </tr>
+          <tr>
+            <td>Jun 22</td>
+            <td>Offshore Rig Transportation</td>
+            <td>Black Sea, Turkey</td>
+            <td>3,260.00</td>
+            <td>—</td>
+            <td>773,063.90</td>
+          </tr>
+          <tr>
+            <td>Jun 23</td>
+            <td>Site Catering & Hospitality</td>
+            <td>Black Sea, Turkey</td>
+            <td>2,785.00</td>
+            <td>—</td>
+            <td>770,278.90</td>
+          </tr>
+          <tr>
+            <td>Jun 24</td>
+            <td>Corporate Reimbursement</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>28,400.00</td>
+            <td>798,678.90</td>
+          </tr>
+          <tr>
+            <td>Jun 26</td>
+            <td>Heavy Equipment Contractor</td>
+            <td>Zonguldak, Turkey</td>
+            <td>17,950.00</td>
+            <td>—</td>
+            <td>780,728.90</td>
+          </tr>
+          <tr>
+            <td>Jun 28</td>
+            <td>Client Dinner</td>
+            <td>Istanbul, Turkey</td>
+            <td>748.25</td>
+            <td>—</td>
+            <td>779,980.65</td>
+          </tr>
+          <tr>
+            <td>Jun 30</td>
+            <td>Investment Dividend</td>
+            <td>Las Vegas, NV</td>
+            <td>—</td>
+            <td>6,875.00</td>
+            <td>786,855.65</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const actionResult = document.getElementById('actionResult');
+    const actionMessage = document.getElementById('actionMessage');
+    const actionConfirmation = document.getElementById('actionConfirmation');
+    const actionFormContainer = document.getElementById('actionFormContainer');
+    const transactionSection = document.getElementById('transactionsSection');
+    const tableRows = transactionSection.querySelectorAll('tbody tr');
+
+    const actions = {
+      'transfer-funds': renderTransferFunds,
+      'pay-bill': renderPayBill,
+      'download-statement': renderDownloadStatement,
+      'view-alerts': renderViewAlerts,
+      'send-money': renderSendMoney,
+      'add-beneficiary': renderAddBeneficiary,
+      'schedule-payment': renderSchedulePayment,
+      'view-transactions': renderViewTransactions
+    };
+
+    function renderTransferFunds() {
+      actionMessage.textContent = 'Transfer funds ready. Complete the form below to move money between accounts.';
+      actionFormContainer.innerHTML = `
+        <form class="action-form" id="actionForm">
+          <div class="form-row">
+            <label for="fromAccount">From account</label>
+            <select id="fromAccount" required>
+              <option value="checking">Checking • $335,500</option>
+              <option value="savings">Savings • $302,700</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="toAccount">To account</label>
+            <select id="toAccount" required>
+              <option value="savings">Savings • $302,700</option>
+              <option value="business">Business • $111,800</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="transferAmount">Amount</label>
+            <input id="transferAmount" type="number" min="1" placeholder="Enter amount" required />
+          </div>
+          <button type="submit" class="submit-button">Start transfer</button>
+        </form>
+      `;
+      renderFormHandler('transfer-funds');
+    }
+
+    function renderPayBill() {
+      actionMessage.textContent = 'Pay bill loaded. Enter bill details to schedule a payment.';
+      actionFormContainer.innerHTML = `
+        <form class="action-form" id="actionForm">
+          <div class="form-row">
+            <label for="vendor">Vendor</label>
+            <input id="vendor" type="text" placeholder="Electric company, subscription, etc." required />
+          </div>
+          <div class="form-row">
+            <label for="billAmount">Amount</label>
+            <input id="billAmount" type="number" min="1" placeholder="Enter amount" required />
+          </div>
+          <div class="form-row">
+            <label for="dueDate">Due date</label>
+            <input id="dueDate" type="date" required />
+          </div>
+          <button type="submit" class="submit-button">Schedule bill payment</button>
+        </form>
+      `;
+      renderFormHandler('pay-bill');
+    }
+
+    function renderDownloadStatement() {
+      actionMessage.textContent = 'Download your latest statement now.';
+      actionFormContainer.innerHTML = `
+        <div class="action-form">
+          <div class="form-row">
+            <p>Select the date range and then download your statement.</p>
+          </div>
+          <div class="form-row">
+            <label for="statementMonth">Statement month</label>
+            <select id="statementMonth">
+              <option>July 2026</option>
+              <option>June 2026</option>
+              <option>May 2026</option>
+            </select>
+          </div>
+          <button id="downloadStatementButton" class="submit-button">Download statement</button>
+        </div>
+      `;
+      document.getElementById('downloadStatementButton').addEventListener('click', (event) => {
+        event.preventDefault();
+        const fileName = 'bank-statement.pdf';
+        const blob = new Blob(['Sample bank statement for David Mertens'], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        actionMessage.textContent = `Statement downloaded: ${fileName}`;
+      });
+    }
+
+    function renderViewAlerts() {
+      actionMessage.textContent = 'Here are your most recent alerts.';
+      actionFormContainer.innerHTML = `
+        <div class="action-form">
+          <div class="form-row">
+            <p>• Payment due in 3 days for electricity</p>
+            <p>• New login from trusted device</p>
+            <p>• Savings goal reached 95%</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSendMoney() {
+      actionMessage.textContent = 'Send money. Enter recipient details and amount.';
+      actionFormContainer.innerHTML = `
+        <form class="action-form" id="actionForm">
+          <div class="form-row">
+            <p>From account: ****9819 · Routing: 062206826</p>
+          </div>
+          <div class="form-row">
+            <label for="recipientName">Recipient name</label>
+            <input id="recipientName" type="text" placeholder="Enter recipient name" required />
+          </div>
+          <div class="form-row">
+            <label for="recipientAccount">Recipient account number</label>
+            <input id="recipientAccount" type="text" placeholder="Account number" required />
+          </div>
+          <div class="form-row">
+            <label for="sendAmount">Amount</label>
+            <input id="sendAmount" type="number" min="1" placeholder="Enter amount" required />
+          </div>
+          <div class="form-row">
+            <label for="sendNote">Note (optional)</label>
+            <textarea id="sendNote" placeholder="Add a note"></textarea>
+          </div>
+          <button type="submit" class="submit-button">Send money</button>
+        </form>
+      `;
+      renderFormHandler('send-money');
+    }
+
+    function renderAddBeneficiary() {
+      actionMessage.textContent = 'Add a beneficiary so you can send money faster next time.';
+      actionFormContainer.innerHTML = `
+        <form class="action-form" id="actionForm">
+          <div class="form-row">
+            <label for="beneficiaryName">Beneficiary name</label>
+            <input id="beneficiaryName" type="text" placeholder="Enter name" required />
+          </div>
+          <div class="form-row">
+            <label for="beneficiaryAccount">Account number</label>
+            <input id="beneficiaryAccount" type="text" placeholder="Account number" required />
+          </div>
+          <div class="form-row">
+            <label for="beneficiaryBank">Bank name</label>
+            <input id="beneficiaryBank" type="text" placeholder="Bank name" required />
+          </div>
+          <button type="submit" class="submit-button">Save beneficiary</button>
+        </form>
+      `;
+      renderFormHandler('add-beneficiary');
+    }
+
+    function renderSchedulePayment() {
+      actionMessage.textContent = 'Schedule a payment and choose how often it should recur.';
+      actionFormContainer.innerHTML = `
+        <form class="action-form" id="actionForm">
+          <div class="form-row">
+            <label for="schedulePayee">Payee</label>
+            <input id="schedulePayee" type="text" placeholder="Payee name" required />
+          </div>
+          <div class="form-row">
+            <label for="scheduleAmount">Amount</label>
+            <input id="scheduleAmount" type="number" min="1" placeholder="Enter amount" required />
+          </div>
+          <div class="form-row">
+            <label for="scheduleDate">Start date</label>
+            <input id="scheduleDate" type="date" required />
+          </div>
+          <div class="form-row">
+            <label for="scheduleFrequency">Frequency</label>
+            <select id="scheduleFrequency" required>
+              <option value="one-time">One-time</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <button type="submit" class="submit-button">Schedule payment</button>
+        </form>
+      `;
+      renderFormHandler('schedule-payment');
+    }
+
+    function renderViewTransactions() {
+      highlightTransactions();
+      actionMessage.textContent = 'Viewing transactions. The recent activity table has been highlighted.';
+      actionFormContainer.innerHTML = `
+        <div class="action-form">
+          <div class="form-row">
+            <p>Scroll through the table below to review your latest activity.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFormHandler(actionName) {
+      const form = document.getElementById('actionForm');
+      if (!form) return;
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const message = getSuccessMessage(actionName);
+        actionMessage.textContent = message;
+        actionConfirmation.textContent = `${message} ✅`;
+        actionConfirmation.classList.add('active');
+        actionFormContainer.innerHTML = '<div class="action-form"><p>Success! Your action has been recorded.</p></div>';
+      });
+    }
+
+    function getSuccessMessage(actionName) {
+      switch (actionName) {
+        case 'transfer-funds':
+          return 'Transfer started. Your money is being moved between accounts.';
+        case 'pay-bill':
+          return 'Payment scheduled. Your bill will be paid on the selected date.';
+        case 'send-money':
+          return 'Money sent. Your transfer is on its way.';
+        case 'add-beneficiary':
+          return 'Beneficiary saved. You can now send money faster next time.';
+        case 'schedule-payment':
+          return 'Payment scheduled. Your recurring payment is now set up.';
+        default:
+          return 'Action completed successfully.';
+      }
+    }
+
+    function highlightTransactions() {
+      transactionSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      tableRows.forEach(row => row.classList.add('highlight-row'));
+      setTimeout(() => {
+        tableRows.forEach(row => row.classList.remove('highlight-row'));
+      }, 1800);
+    }
+
+    document.querySelectorAll('[data-action]').forEach(button => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.action;
+        actionFormContainer.innerHTML = '';
+        actionResult.classList.add('active');
+        actionResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (actions[action]) {
+          actions[action]();
+        } else {
+          actionMessage.textContent = 'Action not supported yet.';
+        }
+      });
+    });
+
+    document.getElementById('signOutButton').addEventListener('click', () => {
+      actionConfirmation.textContent = 'You have signed out successfully. Redirecting to login...';
+      actionConfirmation.classList.add('active');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    });
+  </script>
+</body>
+
+</html>
