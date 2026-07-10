@@ -376,7 +376,7 @@
       <div class="top-card-right">
         <div>
           <div>Total balance</div>
-          <div class="account-balance"><span class="balance-value" data-amount="$750,000" data-hidden="••••••">$750,000</span></div>
+          <div class="account-balance"><span class="balance-value" data-account="total" data-amount="$750,000" data-hidden="••••••">$750,000</span></div>
         </div>
         <button class="balance-toggle" id="toggleBalanceVisibility" type="button">Hide balances</button>
         <button class="secondary" id="signOutButton">Sign out</button>
@@ -386,9 +386,9 @@
     <section class="summary-card">
       <h2>Account overview</h2>
       <div class="accounts-list">
-        <div class="account-pill active">Checking • <span class="balance-value" data-amount="$335,500" data-hidden="••••••">$335,500</span></div>
-        <div class="account-pill">Savings • <span class="balance-value" data-amount="$302,700" data-hidden="••••••">$302,700</span></div>
-        <div class="account-pill">Business • <span class="balance-value" data-amount="$111,800" data-hidden="••••••">$111,800</span></div>
+        <div class="account-pill active">Checking • <span class="balance-value" data-account="checking" data-amount="$335,500" data-hidden="••••••">$335,500</span></div>
+        <div class="account-pill">Savings • <span class="balance-value" data-account="savings" data-amount="$302,700" data-hidden="••••••">$302,700</span></div>
+        <div class="account-pill">Business • <span class="balance-value" data-account="business" data-amount="$111,800" data-hidden="••••••">$111,800</span></div>
       </div>
       <div class="button-row">
         <button class="primary" data-action="transfer-funds">Transfer funds</button>
@@ -613,8 +613,42 @@
   <script>
     const balanceToggleButton = document.getElementById('toggleBalanceVisibility');
     const balanceValues = document.querySelectorAll('.balance-value');
+    const accountBalances = {
+      checking: 335500,
+      savings: 302700,
+      business: 111800
+    };
+    let balanceHidden = false;
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    function updateAccountBalances() {
+      const totalBalance = accountBalances.checking + accountBalances.savings + accountBalances.business;
+      const totalBalanceValue = document.querySelector('.account-balance .balance-value');
+      const accountBalanceElements = document.querySelectorAll('.account-pill .balance-value');
+
+      if (totalBalanceValue) {
+        totalBalanceValue.dataset.amount = formatCurrency(totalBalance);
+        totalBalanceValue.textContent = balanceHidden ? totalBalanceValue.dataset.hidden : totalBalanceValue.dataset.amount;
+      }
+
+      accountBalanceElements.forEach((element) => {
+        const accountKey = element.dataset.account;
+        if (!accountKey || !accountBalances[accountKey]) return;
+        const amount = accountBalances[accountKey];
+        element.dataset.amount = formatCurrency(amount);
+        element.textContent = balanceHidden ? element.dataset.hidden : element.dataset.amount;
+      });
+    }
 
     function setBalanceVisibility(isHidden) {
+      balanceHidden = isHidden;
       balanceValues.forEach((value) => {
         value.textContent = isHidden ? value.dataset.hidden : value.dataset.amount;
         value.classList.toggle('is-hidden', isHidden);
@@ -631,12 +665,14 @@
       });
     }
 
+    updateAccountBalances();
+
     const actionResult = document.getElementById('actionResult');
     const actionMessage = document.getElementById('actionMessage');
     const actionConfirmation = document.getElementById('actionConfirmation');
     const actionFormContainer = document.getElementById('actionFormContainer');
     const transactionSection = document.getElementById('transactionsSection');
-    const tableRows = transactionSection.querySelectorAll('tbody tr');
+    const transactionTableBody = transactionSection.querySelector('tbody');
 
     const actions = {
       'transfer-funds': renderTransferFunds,
@@ -837,14 +873,122 @@
       `;
     }
 
+    function appendTransactionRow(description, amount, location, balanceAfter) {
+      const today = new Date();
+      const month = today.toLocaleString('en-US', { month: 'short' });
+      const day = String(today.getDate()).padStart(2, '0');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${month} ${day}</td>
+        <td>${description}</td>
+        <td>${location}</td>
+        <td class="amount-negative">${formatCurrency(amount)}</td>
+        <td>—</td>
+        <td>${formatCurrency(balanceAfter)}</td>
+      `;
+      transactionTableBody.insertBefore(row, transactionTableBody.firstChild);
+    }
+
+    function applyOutgoingTransaction({ actionName, amount, description, location = 'Online transfer', fromAccount = 'checking', toAccount = null }) {
+      const numericAmount = Number(amount);
+      if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+        actionMessage.textContent = 'Enter a valid amount greater than zero.';
+        actionConfirmation.textContent = 'Please enter a valid amount.';
+        actionConfirmation.classList.add('active');
+        return false;
+      }
+
+      if (accountBalances[fromAccount] < numericAmount) {
+        actionMessage.textContent = 'Insufficient funds for this transfer.';
+        actionConfirmation.textContent = 'Insufficient funds.';
+        actionConfirmation.classList.add('active');
+        return false;
+      }
+
+      accountBalances[fromAccount] -= numericAmount;
+      if (toAccount && accountBalances[toAccount] !== undefined) {
+        accountBalances[toAccount] += numericAmount;
+      }
+
+      updateAccountBalances();
+      appendTransactionRow(description, numericAmount, location, accountBalances[fromAccount]);
+      return true;
+    }
+
     function renderFormHandler(actionName) {
       const form = document.getElementById('actionForm');
       if (!form) return;
       form.addEventListener('submit', (event) => {
         event.preventDefault();
-        const message = getSuccessMessage(actionName);
+
+        let success = false;
+        let message = getSuccessMessage(actionName);
+
+        switch (actionName) {
+          case 'transfer-funds': {
+            const transferAmount = form.querySelector('#transferAmount').value;
+            const fromAccount = form.querySelector('#fromAccount').value;
+            const toAccount = form.querySelector('#toAccount').value;
+            success = applyOutgoingTransaction({
+              actionName,
+              amount: transferAmount,
+              description: `Transfer to ${toAccount === 'savings' ? 'Savings' : 'Business'}`,
+              location: 'Internal transfer',
+              fromAccount: fromAccount === 'savings' ? 'savings' : 'checking',
+              toAccount: toAccount === 'savings' ? 'savings' : 'business'
+            });
+            break;
+          }
+          case 'pay-bill': {
+            const vendor = form.querySelector('#vendor').value;
+            const billAmount = form.querySelector('#billAmount').value;
+            success = applyOutgoingTransaction({
+              actionName,
+              amount: billAmount,
+              description: `Bill pay to ${vendor}`,
+              location: 'Bill payment',
+              fromAccount: 'checking'
+            });
+            break;
+          }
+          case 'send-money': {
+            const recipientName = form.querySelector('#recipientName').value;
+            const sendAmount = form.querySelector('#sendAmount').value;
+            success = applyOutgoingTransaction({
+              actionName,
+              amount: sendAmount,
+              description: `Sent to ${recipientName}`,
+              location: 'Online transfer',
+              fromAccount: 'checking'
+            });
+            break;
+          }
+          case 'schedule-payment': {
+            const payee = form.querySelector('#schedulePayee').value;
+            const scheduleAmount = form.querySelector('#scheduleAmount').value;
+            success = applyOutgoingTransaction({
+              actionName,
+              amount: scheduleAmount,
+              description: `Scheduled payment to ${payee}`,
+              location: 'Scheduled payment',
+              fromAccount: 'checking'
+            });
+            break;
+          }
+          default:
+            success = true;
+            break;
+        }
+
+        if (!success) {
+          actionMessage.textContent = actionMessage.textContent || 'Unable to complete this action.';
+          actionConfirmation.classList.add('active');
+          actionFormContainer.innerHTML = '<div class="action-form"><p>Please review the details and try again.</p></div>';
+          return;
+        }
+
         actionMessage.textContent = message;
-        actionConfirmation.textContent = `${message} ✅`;
+        actionConfirmation.textContent = `${message} ✅\nBalance updated immediately.`;
         actionConfirmation.classList.add('active');
         actionFormContainer.innerHTML = '<div class="action-form"><p>Success! Your action has been recorded.</p></div>';
       });
@@ -869,9 +1013,10 @@
 
     function highlightTransactions() {
       transactionSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      tableRows.forEach(row => row.classList.add('highlight-row'));
+      const rows = transactionTableBody.querySelectorAll('tr');
+      rows.forEach(row => row.classList.add('highlight-row'));
       setTimeout(() => {
-        tableRows.forEach(row => row.classList.remove('highlight-row'));
+        rows.forEach(row => row.classList.remove('highlight-row'));
       }, 1800);
     }
 
